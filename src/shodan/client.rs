@@ -20,7 +20,8 @@ impl ShodanResult {
     }
 
     pub fn ws_url(&self) -> String {
-        format!("ws://{}:{}", self.ip, self.port)
+        // WebSocket typically runs on port 8546, regardless of which port Shodan found
+        format!("ws://{}:8546", self.ip)
     }
 
     pub fn is_http_port(&self) -> bool {
@@ -42,11 +43,17 @@ struct ShodanMatch {
     ip_str: String,
     port: u16,
     location: ShodanLocation,
+    ethereum_rpc: Option<EthereumRpc>,
 }
 
 #[derive(Debug, Deserialize)]
 struct ShodanLocation {
     country_code: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EthereumRpc {
+    chain_id: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -84,13 +91,9 @@ impl ShodanClient {
         self.rate_limit().await;
 
         let hex_id = format!("0x{:x}", chain_id);
-        let decimal_id = chain_id.to_string();
 
-        // Build query: search for both hex and decimal chain IDs, both ports
-        let mut query = format!(
-            "port:8545,8546 (\"Chain ID: {}\" OR \"Chain ID: {}\")",
-            hex_id, decimal_id
-        );
+        // Use "Chain Id: 0x1" format (note capital I) - matches Geth response format
+        let mut query = format!("port:8545,8546 \"Chain Id: {}\"", hex_id);
 
         if let Some(cc) = country_code {
             query.push_str(&format!(" country:{}", cc));

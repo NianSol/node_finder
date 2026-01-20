@@ -82,6 +82,8 @@ pub async fn handle_callback(
                 // Clear session
                 state.clear_session(user_id).await;
 
+                let chain_name = chain.name.clone();
+
                 // Send searching message
                 if let Some(msg_id) = message_id {
                     bot.edit_message_text(chat_id, msg_id, "🔍 Searching...")
@@ -100,7 +102,7 @@ pub async fn handle_callback(
 
                 match result {
                     Ok(nodes) if !nodes.is_empty() => {
-                        send_results(&bot, chat_id, &nodes, node_type).await?;
+                        send_results(&bot, chat_id, &nodes, node_type, &chain_name).await?;
                     }
                     Ok(_) => {
                         // No nodes found, try all locations if we had a specific location
@@ -125,7 +127,7 @@ pub async fn handle_callback(
 
                             match expanded_result {
                                 Ok(nodes) if !nodes.is_empty() => {
-                                    send_results(&bot, chat_id, &nodes, node_type).await?;
+                                    send_results(&bot, chat_id, &nodes, node_type, &chain_name).await?;
                                 }
                                 _ => {
                                     bot.send_message(
@@ -345,12 +347,10 @@ async fn perform_search(
     }
 
     // Filter by protocol preference
+    // For WebSocket, we use port 8545 results and convert to 8546 (Shodan doesn't index 8546)
     let filtered: Vec<ShodanResult> = shodan_results
         .into_iter()
-        .filter(|r| match config.protocol {
-            Protocol::Http => r.is_http_port(),
-            Protocol::Ws => r.is_ws_port(),
-        })
+        .filter(|r| r.is_http_port())
         .collect();
 
     // Determine how many nodes to validate
@@ -445,6 +445,7 @@ async fn send_results(
     chat_id: ChatId,
     nodes: &[ValidatedNode],
     node_type: NodeType,
+    chain_name: &str,
 ) -> ResponseResult<()> {
     if node_type == NodeType::Bulk {
         // JSON format, split if needed
@@ -461,9 +462,9 @@ async fn send_results(
 
         for (i, chunk) in chunks.iter().enumerate() {
             let msg = if chunks.len() > 1 {
-                format!("<pre>{}</pre>\nPart {}/{}", chunk, i + 1, chunks.len())
+                format!("<b>{}</b> - Bulk Export\n<pre>{}</pre>\nPart {}/{}", chain_name, chunk, i + 1, chunks.len())
             } else {
-                format!("<pre>{}</pre>", chunk)
+                format!("<b>{}</b> - Bulk Export\n<pre>{}</pre>", chain_name, chunk)
             };
 
             bot.send_message(chat_id, msg)
@@ -478,12 +479,14 @@ async fn send_results(
             NodeType::Bulk => "bulk",
         };
 
-        let mut msg = format!("✅ Found {} {} nodes:\n\n", nodes.len(), type_name);
+        let mut msg = format!("✅ Found {} {} <b>{}</b> nodes:\n\n", nodes.len(), type_name, chain_name);
         for (i, node) in nodes.iter().enumerate() {
-            msg.push_str(&format!("{}. {}\n", i + 1, node.url));
+            msg.push_str(&format!("{}. <code>{}</code>\n", i + 1, node.url));
         }
 
-        bot.send_message(chat_id, msg).await?;
+        bot.send_message(chat_id, msg)
+            .parse_mode(teloxide::types::ParseMode::Html)
+            .await?;
     }
 
     Ok(())
