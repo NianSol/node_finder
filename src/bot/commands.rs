@@ -29,12 +29,12 @@ async fn handle_start(bot: Bot, msg: Message, state: BotState) -> ResponseResult
     // Clear any existing session
     state.clear_session(user_id).await;
 
-    let text = "🔍 *Node Finder*\n\n\
+    let text = "🔍 <b>Node Finder</b>\n\n\
                 Find public RPC nodes from Shodan.\n\n\
                 Select an option below:";
 
     bot.send_message(msg.chat.id, text)
-        .parse_mode(teloxide::types::ParseMode::MarkdownV2)
+        .parse_mode(teloxide::types::ParseMode::Html)
         .reply_markup(keyboards::main_menu())
         .await?;
 
@@ -42,22 +42,22 @@ async fn handle_start(bot: Bot, msg: Message, state: BotState) -> ResponseResult
 }
 
 async fn handle_help(bot: Bot, msg: Message) -> ResponseResult<()> {
-    let text = "📖 *Node Finder Help*\n\n\
-                *Commands:*\n\
-                /start \\- Show main menu\n\
-                /help \\- Show this help\n\n\
-                *Node Types:*\n\
-                • Full Node \\- Synced nodes\n\
-                • Archive Node \\- Nodes with historical data\n\
-                • Bulk Nodes \\- JSON export of many nodes\n\n\
-                *Config:*\n\
+    let text = "📖 <b>Node Finder Help</b>\n\n\
+                <b>Commands:</b>\n\
+                /start - Show main menu\n\
+                /help - Show this help\n\n\
+                <b>Node Types:</b>\n\
+                • Full Node - Synced nodes\n\
+                • Archive Node - Nodes with historical data\n\
+                • Bulk Nodes - JSON export of many nodes\n\n\
+                <b>Config:</b>\n\
                 • Set default node count\n\
                 • Choose HTTP or WS protocol\n\
                 • Adjust sync tolerance\n\
                 • Set custom reference RPCs";
 
     bot.send_message(msg.chat.id, text)
-        .parse_mode(teloxide::types::ParseMode::MarkdownV2)
+        .parse_mode(teloxide::types::ParseMode::Html)
         .await?;
 
     Ok(())

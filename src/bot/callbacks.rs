@@ -159,9 +159,9 @@ pub async fn handle_callback(
                         bot.edit_message_text(
                             chat_id,
                             msg_id,
-                            "🔍 *Node Finder*\n\nSelect an option:",
+                            "🔍 <b>Node Finder</b>\n\nSelect an option:",
                         )
-                        .parse_mode(teloxide::types::ParseMode::MarkdownV2)
+                        .parse_mode(teloxide::types::ParseMode::Html)
                         .reply_markup(keyboards::main_menu())
                         .await?;
                     }
@@ -461,13 +461,13 @@ async fn send_results(
 
         for (i, chunk) in chunks.iter().enumerate() {
             let msg = if chunks.len() > 1 {
-                format!("```json\n{}\n```\nPart {}/{}", chunk, i + 1, chunks.len())
+                format!("<pre>{}</pre>\nPart {}/{}", chunk, i + 1, chunks.len())
             } else {
-                format!("```json\n{}\n```", chunk)
+                format!("<pre>{}</pre>", chunk)
             };
 
             bot.send_message(chat_id, msg)
-                .parse_mode(teloxide::types::ParseMode::MarkdownV2)
+                .parse_mode(teloxide::types::ParseMode::Html)
                 .await?;
         }
     } else {
